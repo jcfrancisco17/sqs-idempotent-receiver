@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+#   postgres:
+#     image: postgres:11.9-alpine
+#     container_name: sqs-idempotent-receiver-postgres
+#     ports:
+#       - "5432:5432"
+#     env_file: .env
+
+#   flyway:
+#     image: flyway/flyway:6.5.5-alpine
+#     container_name: dncr-mw-flyway
+#     network_mode: host
+#     volumes:
+#       - ./scripts/flyway-entrypoint.sh:/flyway-entrypoint.sh
+#       - ./db-migration/scripts:/flyway/sql
+#     entrypoint: /flyway-entrypoint.sh
+#     env_file: .env
+
+  localstack:
+    image: localstack/localstack:0.9.5
+    container_name: sqs-idempotent-receiver-localstack
+    ports:
+        - "4576:4576"
+    volumes:
+      - ./scripts/setup_aws.sh:/docker-entrypoint-initaws.d/setup_aws.sh
+    env_file: .env
+    environment:
+        - SERVICES=sqs
+        - DEBUG=1
+        - LOCALSTACK_HOSTNAME=localhost
+        - DATA_DIR=/tmp/localstack/data
+
+  sqs-idempotent-receiver:
+    image: sqs-idempotent-receiver:latest
+    container_name: sqs-idempotent-receiver
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+    #   - postgres
+      - localstack
